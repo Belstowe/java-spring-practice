@@ -1,0 +1,73 @@
+plugins {
+    id "io.freefair.lombok" version "6.4.3"
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+
+mainClassName = 'sysmetrics.ConsoleLog'
+
+sourceSets {
+    main.java.srcDirs = ['java']
+}
+
+//tag::repositories[]
+repositories {
+    mavenCentral()
+}
+//end::repositories[]
+
+//tag::jar[]
+jar {
+    archiveBaseName = 'sysmetrics'
+    archiveVersion = '1.0'
+
+    manifest {
+        attributes(
+            'Main-Class': 'sysmetrics.ConsoleLog',
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+        )
+    }
+}
+//end::jar[]
+
+//tag::dependencies[]
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+
+dependencies {
+    testImplementation "junit:junit:4.13"
+}
+//end::dependencies[]
+
+//tag::tasks[]
+tasks.register('uberJar', Jar) {
+    duplicatesStrategy = 'include'
+
+    archiveClassifier = 'uber'
+
+    from sourceSets.main.output
+
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+
+    manifest {
+        attributes(
+            'Main-Class': 'phonebase.CLI',
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+        )
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+//end::tasks[]
