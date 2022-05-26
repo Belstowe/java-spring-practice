@@ -8,10 +8,6 @@ apply plugin: 'application'
 
 mainClassName = 'sysmetrics.ConsoleLog'
 
-sourceSets {
-    main.java.srcDirs = ['java']
-}
-
 //tag::repositories[]
 repositories {
     mavenCentral()
@@ -41,7 +37,8 @@ java {
 }
 
 dependencies {
-    testImplementation "junit:junit:4.13"
+    implementation 'com.github.oshi:oshi-core-java11:6.1.6'
+    testImplementation 'junit:junit:4.13'
 }
 //end::dependencies[]
 
@@ -60,7 +57,7 @@ tasks.register('uberJar', Jar) {
 
     manifest {
         attributes(
-            'Main-Class': 'phonebase.CLI',
+            'Main-Class': 'sysmetrics.ConsoleLog',
             'Implementation-Title': project.name,
             'Implementation-Version': project.version,
         )
