@@ -59,7 +59,7 @@ public class SysInfoGatherer {
 
             SysInfoGatherer.this.updaters.add(() -> {
                 for (NetworkIF networkInterface : networkInterfaces) {
-                    String interfaceName = networkInterface.getDisplayName();
+                    String interfaceName = networkInterface.getName();
                     networkInterface.updateAttributes();
                     metrics.get("network_usage").put(interfaceName + " recv",
                             Double.valueOf(networkInterface.getBytesRecv()));
