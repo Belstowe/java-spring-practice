@@ -8,6 +8,10 @@ apply plugin: 'application'
 
 mainClassName = 'sysmetrics.ConsoleLog'
 
+sourceSets {
+    main.resources.srcDirs = ['src/main/resources']
+}
+
 //tag::repositories[]
 repositories {
     mavenCentral()
@@ -40,6 +44,7 @@ dependencies {
     implementation 'com.github.oshi:oshi-core-java11:6.1.6'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.3'
     implementation 'org.slf4j:slf4j-nop:1.7.36'
+    implementation 'org.tomlj:tomlj:1.0.0'
     testImplementation 'junit:junit:4.13.2'
 }
 //end::dependencies[]

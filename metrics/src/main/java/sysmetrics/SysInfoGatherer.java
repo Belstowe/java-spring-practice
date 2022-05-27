@@ -103,9 +103,9 @@ public class SysInfoGatherer {
             return this;
         }
 
-        public Builder initDisk()
+        public Builder initDisk(String pathOnDisk)
                 throws IOException {
-            SysInfoGatherer.this.disk = Files.getFileStore(Paths.get("./"));
+            SysInfoGatherer.this.disk = Files.getFileStore(Paths.get(pathOnDisk));
             SysInfoGatherer.this.metrics.put("disk_usage", new HashMap<String, Double>());
 
             SysInfoGatherer.this.updaters.add(() -> {
