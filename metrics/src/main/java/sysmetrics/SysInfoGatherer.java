@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import dns.PingUtility;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
@@ -118,6 +120,22 @@ public class SysInfoGatherer {
         public Builder initDNS(String... domains) {
             SysInfoGatherer.this.dnsServers = domains;
             SysInfoGatherer.this.metrics.put("dns_latency", new HashMap<String, Double>());
+
+            SysInfoGatherer.this.updaters.add(() -> {
+                for (String dnsServer : dnsServers) {
+                    try {
+                        Optional<Float> timeMonad = PingUtility.check(dnsServer);
+                        if (!timeMonad.isPresent()) {
+                            metrics.get("dns_latency").put(dnsServer, 0.0);
+                            continue;
+                        }
+                        metrics.get("dns_latency").put(dnsServer, Double.valueOf(timeMonad.get()));
+                    } catch (IOException | InterruptedException e) {
+                        metrics.get("dns_latency").put(dnsServer, 0.0);
+                    }
+                }
+            });
+
             return this;
         }
 
