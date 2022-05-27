@@ -1,0 +1,16 @@
+[network_usage]
+enabled = true
+
+[cpu_usage]
+enabled = true
+
+[disk_usage]
+enabled = true
+point = "./"
+
+[memory_usage]
+enabled = true
+
+[dns_latency]
+enabled = true
+servers = [ "1.1.1.1", "8.8.8.8", "77.88.8.8" ]
