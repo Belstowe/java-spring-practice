@@ -9,5 +9,5 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 3G
+          memory: 4G
     command: ["--smp", "1", "--memory", "2G"]

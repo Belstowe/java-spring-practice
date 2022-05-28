@@ -70,9 +70,10 @@ public class SysInfoGatherer {
                         createTableStatement += ", ";
                         createTableStatement += subEntry + " double";
                     }
-                    createTableStatement += " ) WITH CLUSTERING ORDER BY (time_got DESC);";
+                    createTableStatement += " );";
                     executeStatement(createTableStatement);
                 }
+                cqlTablesInitialized = true;
             }
             var timestamp = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now());
             timestamp = timestamp.substring(0, timestamp.length() - 8);
@@ -97,7 +98,7 @@ public class SysInfoGatherer {
     public static Builder newBuilder() {
         return new SysInfoGatherer().new Builder();
     }
- 
+
     public class Builder {
         private SystemInfo sysInfo = new SystemInfo();
         private HardwareAbstractionLayer sysHAL = sysInfo.getHardware();
@@ -179,15 +180,16 @@ public class SysInfoGatherer {
 
             SysInfoGatherer.this.updaters.add(() -> {
                 for (String dnsServer : dnsServers) {
+                    String cqlIPRepr = "ip_" + dnsServer.replace('.', '_');
                     try {
                         Optional<Float> timeMonad = PingUtility.check(dnsServer);
                         if (!timeMonad.isPresent()) {
-                            metrics.get("dns_latency").put(dnsServer, 0.0);
+                            metrics.get("dns_latency").put(cqlIPRepr, 0.0);
                             continue;
                         }
-                        metrics.get("dns_latency").put(dnsServer, Double.valueOf(timeMonad.get()));
+                        metrics.get("dns_latency").put(cqlIPRepr, Double.valueOf(timeMonad.get()));
                     } catch (IOException | InterruptedException e) {
-                        metrics.get("dns_latency").put(dnsServer, 0.0);
+                        metrics.get("dns_latency").put(cqlIPRepr, 0.0);
                     }
                 }
             });
@@ -203,7 +205,8 @@ public class SysInfoGatherer {
             SysInfoGatherer.this.cqlCluster = cqlClusterBuilder.build();
             SysInfoGatherer.this.cqlSession = SysInfoGatherer.this.cqlCluster.connect();
 
-            SysInfoGatherer.this.cqlSession.execute("CREATE KEYSPACE IF NOT EXISTS " + namespace + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2};");
+            SysInfoGatherer.this.cqlSession.execute("CREATE KEYSPACE IF NOT EXISTS " + namespace
+                    + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2};");
             SysInfoGatherer.this.cqlSession.execute("USE " + namespace);
 
             return this;
