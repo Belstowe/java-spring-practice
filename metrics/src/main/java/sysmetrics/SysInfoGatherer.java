@@ -5,6 +5,7 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,11 +35,20 @@ public class SysInfoGatherer {
     private String[] dnsServers;
     private Cluster cqlCluster;
     private Session cqlSession;
+    private boolean cqlTablesInitialized = false;
 
     private Map<String, Map<String, Double>> metrics = new HashMap<String, Map<String, Double>>();
     private List<UpdateCallable> updaters = new ArrayList<UpdateCallable>();
 
     private SysInfoGatherer() {
+    }
+
+    private void executeStatement(String statement) {
+        try {
+            cqlSession.execute(statement);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void close() {
@@ -52,20 +62,33 @@ public class SysInfoGatherer {
             updater.update();
         }
         if (cqlCluster != null) {
-            var timestamp = LocalDateTime.now();
+            if (!cqlTablesInitialized) {
+                for (var entry : metrics.entrySet()) {
+                    String createTableStatement = "CREATE TABLE IF NOT EXISTS " + entry.getKey() + " ( ";
+                    createTableStatement += "time_got timestamp PRIMARY KEY";
+                    for (var subEntry : entry.getValue().keySet()) {
+                        createTableStatement += ", ";
+                        createTableStatement += subEntry + " double";
+                    }
+                    createTableStatement += " ) WITH CLUSTERING ORDER BY (time_got DESC);";
+                    executeStatement(createTableStatement);
+                }
+            }
+            var timestamp = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now());
+            timestamp = timestamp.substring(0, timestamp.length() - 8);
             for (var entry : metrics.entrySet()) {
                 String insertStatement = "INSERT INTO " + entry.getKey() + " (time_got";
                 for (var subKey : entry.getValue().keySet()) {
                     insertStatement += ", ";
                     insertStatement += subKey;
                 }
-                insertStatement += ") VALUES (" + timestamp;
+                insertStatement += ") VALUES ('" + timestamp + "'";
                 for (var subValue : entry.getValue().values()) {
                     insertStatement += ", ";
                     insertStatement += Double.toString(subValue);
                 }
                 insertStatement += ");";
-                cqlSession.execute(insertStatement);
+                executeStatement(insertStatement);
             }
         }
         return metrics;
@@ -94,9 +117,9 @@ public class SysInfoGatherer {
                     networkInterface.updateAttributes();
                     long newRecv = networkInterface.getBytesRecv();
                     long newSent = networkInterface.getBytesSent();
-                    metrics.get("network_usage").put(interfaceName + " recv",
+                    metrics.get("network_usage").put(interfaceName + "_recv",
                             Double.valueOf(newRecv - oldRecv));
-                    metrics.get("network_usage").put(interfaceName + " sent",
+                    metrics.get("network_usage").put(interfaceName + "_sent",
                             Double.valueOf(newSent - oldSent));
                 }
             });
@@ -112,7 +135,7 @@ public class SysInfoGatherer {
             SysInfoGatherer.this.updaters.add(() -> {
                 double[] recentUsage = cpu.getProcessorCpuLoadBetweenTicks(cpuLoadTicks);
                 for (int i = 0; i < recentUsage.length; i++) {
-                    metrics.get("cpu_usage").put(Integer.toString(i + 1), recentUsage[i]);
+                    metrics.get("cpu_usage").put("cpu" + Integer.toString(i + 1), recentUsage[i]);
                 }
                 cpuLoadTicks = cpu.getProcessorCpuLoadTicks();
             });
@@ -126,7 +149,7 @@ public class SysInfoGatherer {
 
             SysInfoGatherer.this.updaters.add(() -> {
                 double usedToTotal = 1 - (ram.getAvailable() / (double) ram.getTotal());
-                metrics.get("memory_usage").put("used/total", usedToTotal);
+                metrics.get("memory_usage").put("used_to_total", usedToTotal);
             });
 
             return this;
@@ -144,7 +167,7 @@ public class SysInfoGatherer {
                 } catch (IOException e) {
                     usedToTotal = 1.0;
                 }
-                metrics.get("disk_usage").put("used/total", usedToTotal);
+                metrics.get("disk_usage").put("used_to_total", usedToTotal);
             });
 
             return this;
@@ -195,18 +218,6 @@ public class SysInfoGatherer {
         }
 
         public SysInfoGatherer build() {
-            if (SysInfoGatherer.this.cqlCluster != null) {
-                for (var entry : SysInfoGatherer.this.metrics.entrySet()) {
-                    String createTableStatement = "CREATE TABLE IF NOT EXISTS " + entry.getKey() + " ( ";
-                    createTableStatement += "time_got timestamp PRIMARY KEY";
-                    for (var subEntry : entry.getValue().keySet()) {
-                        createTableStatement += ", ";
-                        createTableStatement += subEntry + " double";
-                    }
-                    createTableStatement += " );";
-                    SysInfoGatherer.this.cqlSession.execute(createTableStatement);
-                }
-            }
             return SysInfoGatherer.this;
         }
     }
