@@ -4,18 +4,11 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 
 import dns.PingUtility;
 import oshi.SystemInfo;
@@ -35,9 +28,7 @@ public class SysInfoGatherer {
     private GlobalMemory ram;
     private FileStore disk;
     private String[] dnsServers;
-    private Cluster cqlCluster;
-    private Session cqlSession;
-    private boolean cqlTablesInitialized = false;
+    private SysInfoDB db;
 
     private Map<String, Map<String, Double>> metrics = new HashMap<String, Map<String, Double>>();
     private List<UpdateCallable> updaters = new ArrayList<UpdateCallable>();
@@ -45,52 +36,13 @@ public class SysInfoGatherer {
     private SysInfoGatherer() {
     }
 
-    private void executeStatement(String statement) {
-        try {
-            cqlSession.execute(statement);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void close() {
-        if (cqlCluster != null) {
-            cqlCluster.close();
-        }
-    }
-
     public Map<String, Map<String, Double>> updateMetrics() {
         for (UpdateCallable updater : updaters) {
             updater.update();
         }
-        if (cqlCluster != null) {
-            if (!cqlTablesInitialized) {
-                for (var entry : metrics.entrySet()) {
-                    String createTableStatement = "CREATE TABLE IF NOT EXISTS " + entry.getKey() + " ( ";
-                    createTableStatement += "infodate date, infotime time, ";
-                    for (var subEntry : entry.getValue().keySet()) {
-                        createTableStatement += subEntry + " double, ";
-                    }
-                    createTableStatement += "PRIMARY KEY ((infodate), infotime) );";
-                    executeStatement(createTableStatement);
-                }
-                cqlTablesInitialized = true;
-            }
-            var infoDate = "'" + DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDate.now()) + "'";
-            var infoTime = "'" + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "'";
-            for (var entry : metrics.entrySet()) {
-                String insertStatement = "INSERT INTO " + entry.getKey() + " (infodate, infotime";
-                for (var subKey : entry.getValue().keySet()) {
-                    insertStatement += ", ";
-                    insertStatement += subKey;
-                }
-                insertStatement += ") VALUES (" + infoDate + ", " + infoTime;
-                for (var subValue : entry.getValue().values()) {
-                    insertStatement += ", ";
-                    insertStatement += Double.toString(subValue);
-                }
-                insertStatement += ");";
-                executeStatement(insertStatement);
+        if (db != null) {
+            for (var metric_group : metrics.entrySet()) {
+                db.insert(metric_group.getKey(), metric_group.getValue());
             }
         }
         return metrics;
@@ -103,6 +55,7 @@ public class SysInfoGatherer {
     public class Builder {
         private SystemInfo sysInfo = new SystemInfo();
         private HardwareAbstractionLayer sysHAL = sysInfo.getHardware();
+        private Map<String, List<String>> dbColumns = new HashMap<String, List<String>>();
 
         private Builder() {
         }
@@ -110,6 +63,12 @@ public class SysInfoGatherer {
         public Builder initNetworkIFs() {
             SysInfoGatherer.this.networkInterfaces = sysHAL.getNetworkIFs();
             SysInfoGatherer.this.metrics.put("network_usage", new HashMap<String, Double>());
+            dbColumns.put("network_usage", new ArrayList<String>());
+            for (NetworkIF networkInterface : SysInfoGatherer.this.networkInterfaces) {
+                String interfaceName = networkInterface.getName();
+                dbColumns.get("network_usage").add(interfaceName + "_recv");
+                dbColumns.get("network_usage").add(interfaceName + "_sent");
+            }
 
             SysInfoGatherer.this.updaters.add(() -> {
                 for (NetworkIF networkInterface : networkInterfaces) {
@@ -133,6 +92,10 @@ public class SysInfoGatherer {
             SysInfoGatherer.this.cpu = sysHAL.getProcessor();
             SysInfoGatherer.this.cpuLoadTicks = cpu.getProcessorCpuLoadTicks();
             SysInfoGatherer.this.metrics.put("cpu_usage", new HashMap<String, Double>());
+            dbColumns.put("cpu_usage", new ArrayList<String>());
+            for (int i = 0; i < SysInfoGatherer.this.cpuLoadTicks.length; i++) {
+                dbColumns.get("cpu_usage").add("cpu" + Integer.toString(i + 1));
+            }
 
             SysInfoGatherer.this.updaters.add(() -> {
                 double[] recentUsage = cpu.getProcessorCpuLoadBetweenTicks(cpuLoadTicks);
@@ -148,6 +111,8 @@ public class SysInfoGatherer {
         public Builder initMemory() {
             SysInfoGatherer.this.ram = sysHAL.getMemory();
             SysInfoGatherer.this.metrics.put("memory_usage", new HashMap<String, Double>());
+            dbColumns.put("memory_usage", new ArrayList<String>());
+            dbColumns.get("memory_usage").add("used_to_total");
 
             SysInfoGatherer.this.updaters.add(() -> {
                 double usedToTotal = 1 - (ram.getAvailable() / (double) ram.getTotal());
@@ -161,6 +126,8 @@ public class SysInfoGatherer {
                 throws IOException {
             SysInfoGatherer.this.disk = Files.getFileStore(Paths.get(pathOnDisk));
             SysInfoGatherer.this.metrics.put("disk_usage", new HashMap<String, Double>());
+            dbColumns.put("disk_usage", new ArrayList<String>());
+            dbColumns.get("disk_usage").add("used_to_total");
 
             SysInfoGatherer.this.updaters.add(() -> {
                 double usedToTotal;
@@ -178,6 +145,11 @@ public class SysInfoGatherer {
         public Builder initDNS(String... domains) {
             SysInfoGatherer.this.dnsServers = domains;
             SysInfoGatherer.this.metrics.put("dns_latency", new HashMap<String, Double>());
+            dbColumns.put("dns_latency", new ArrayList<String>());
+            for (String domain : domains) {
+                String cqlDomainRepr = "ip_" + domain.replace('.', '_');
+                dbColumns.get("dns_latency").add(cqlDomainRepr);
+            }
 
             SysInfoGatherer.this.updaters.add(() -> {
                 for (String dnsServer : dnsServers) {
@@ -199,17 +171,7 @@ public class SysInfoGatherer {
         }
 
         public Builder initLogCQL(String contactPoint, String namespace, String username, String password) {
-            var cqlClusterBuilder = Cluster.builder().addContactPoint(contactPoint);
-            if (username != "") {
-                cqlClusterBuilder.withCredentials(username, password);
-            }
-            SysInfoGatherer.this.cqlCluster = cqlClusterBuilder.build();
-            SysInfoGatherer.this.cqlSession = SysInfoGatherer.this.cqlCluster.connect();
-
-            SysInfoGatherer.this.cqlSession.execute("CREATE KEYSPACE IF NOT EXISTS " + namespace
-                    + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2};");
-            SysInfoGatherer.this.cqlSession.execute("USE " + namespace);
-
+            SysInfoGatherer.this.db = new SysInfoCQL(contactPoint, namespace, username, password);
             return this;
         }
 
@@ -222,6 +184,11 @@ public class SysInfoGatherer {
         }
 
         public SysInfoGatherer build() {
+            if (SysInfoGatherer.this.db != null) {
+                for (var tableColumns : dbColumns.entrySet()) {
+                    SysInfoGatherer.this.db.initTable(tableColumns.getKey(), tableColumns.getValue());
+                }
+            }
             return SysInfoGatherer.this;
         }
     }

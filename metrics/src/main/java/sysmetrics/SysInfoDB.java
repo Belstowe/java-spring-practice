@@ -2,7 +2,6 @@ package sysmetrics;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,7 +16,7 @@ class DBException {
 }
 
 public interface SysInfoDB extends AutoCloseable {
-    public void initTable(String tableName, Set<String> keys);
+    public void initTable(String tableName, Collection<String> keys);
 
     public void insert(String tableName, Map<String, Double> values);
 

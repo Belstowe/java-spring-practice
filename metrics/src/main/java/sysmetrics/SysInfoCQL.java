@@ -6,7 +6,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
@@ -37,7 +36,7 @@ public class SysInfoCQL
     }
 
     @Override
-    public void initTable(String tableName, Set<String> keys) {
+    public void initTable(String tableName, Collection<String> keys) {
         String createTableStatement = "CREATE TABLE IF NOT EXISTS " + tableName;
         createTableStatement += " ( infodate date, infotime time, ";
         for (var key : keys) {
