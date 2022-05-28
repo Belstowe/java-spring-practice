@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
 
 import dns.PingUtility;
 import oshi.SystemInfo;
@@ -28,6 +32,8 @@ public class SysInfoGatherer {
     private GlobalMemory ram;
     private FileStore disk;
     private String[] dnsServers;
+    private Cluster cqlCluster;
+    private Session cqlSession;
 
     private Map<String, Map<String, Double>> metrics = new HashMap<String, Map<String, Double>>();
     private List<UpdateCallable> updaters = new ArrayList<UpdateCallable>();
@@ -35,9 +41,32 @@ public class SysInfoGatherer {
     private SysInfoGatherer() {
     }
 
+    public void close() {
+        if (cqlCluster != null) {
+            cqlCluster.close();
+        }
+    }
+
     public Map<String, Map<String, Double>> updateMetrics() {
         for (UpdateCallable updater : updaters) {
             updater.update();
+        }
+        if (cqlCluster != null) {
+            var timestamp = LocalDateTime.now();
+            for (var entry : metrics.entrySet()) {
+                String insertStatement = "INSERT INTO " + entry.getKey() + " (time_got";
+                for (var subKey : entry.getValue().keySet()) {
+                    insertStatement += ", ";
+                    insertStatement += subKey;
+                }
+                insertStatement += ") VALUES (" + timestamp;
+                for (var subValue : entry.getValue().values()) {
+                    insertStatement += ", ";
+                    insertStatement += Double.toString(subValue);
+                }
+                insertStatement += ");";
+                cqlSession.execute(insertStatement);
+            }
         }
         return metrics;
     }
@@ -45,7 +74,7 @@ public class SysInfoGatherer {
     public static Builder newBuilder() {
         return new SysInfoGatherer().new Builder();
     }
-
+ 
     public class Builder {
         private SystemInfo sysInfo = new SystemInfo();
         private HardwareAbstractionLayer sysHAL = sysInfo.getHardware();
@@ -143,7 +172,41 @@ public class SysInfoGatherer {
             return this;
         }
 
+        public Builder initLogCQL(String contactPoint, String namespace, String username, String password) {
+            var cqlClusterBuilder = Cluster.builder().addContactPoint(contactPoint);
+            if (username != "") {
+                cqlClusterBuilder.withCredentials(username, password);
+            }
+            SysInfoGatherer.this.cqlCluster = cqlClusterBuilder.build();
+            SysInfoGatherer.this.cqlSession = SysInfoGatherer.this.cqlCluster.connect();
+
+            SysInfoGatherer.this.cqlSession.execute("CREATE KEYSPACE IF NOT EXISTS " + namespace + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2};");
+            SysInfoGatherer.this.cqlSession.execute("USE " + namespace);
+
+            return this;
+        }
+
+        public Builder initLogCQL(String contactPoint, String namespace) {
+            return initLogCQL(contactPoint, namespace, "", "");
+        }
+
+        public Builder initLogCQL(String contactPoint) {
+            return initLogCQL(contactPoint, "SysInfoDefault", "", "");
+        }
+
         public SysInfoGatherer build() {
+            if (SysInfoGatherer.this.cqlCluster != null) {
+                for (var entry : SysInfoGatherer.this.metrics.entrySet()) {
+                    String createTableStatement = "CREATE TABLE IF NOT EXISTS " + entry.getKey() + " ( ";
+                    createTableStatement += "time_got timestamp PRIMARY KEY";
+                    for (var subEntry : entry.getValue().keySet()) {
+                        createTableStatement += ", ";
+                        createTableStatement += subEntry + " double";
+                    }
+                    createTableStatement += " );";
+                    SysInfoGatherer.this.cqlSession.execute(createTableStatement);
+                }
+            }
             return SysInfoGatherer.this;
         }
     }

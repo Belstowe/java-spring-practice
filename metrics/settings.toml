@@ -14,3 +14,10 @@ enabled = true
 [dns_latency]
 enabled = true
 servers = [ "1.1.1.1", "8.8.8.8", "77.88.8.8" ]
+
+[cql_logging]
+enabled = true
+contact_point = "127.0.0.1"
+name = "bill"
+pwd = "BillsPassword"
+namespace = "SysData"
