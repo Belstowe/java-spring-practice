@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  scylla:
+    image: scylladb/scylla:4.6.3
+    ports:
+      - "9042:9042"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    command: ["--smp", "1", "--memory", "2G"]

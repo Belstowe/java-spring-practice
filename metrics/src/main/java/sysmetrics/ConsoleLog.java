@@ -17,7 +17,6 @@ import org.tomlj.TomlParseResult;
 public class ConsoleLog {
     public static SysInfoGatherer initGathererWithTOML(Path pathToProperties)
             throws IOException {
-        System.out.println(pathToProperties.toAbsolutePath());
         TomlParseResult result = Toml.parse(pathToProperties);
 
         var sysInfoBuilder = SysInfoGatherer.newBuilder();
@@ -39,6 +38,12 @@ public class ConsoleLog {
                     .toList()
                     .toArray(String[]::new);
             sysInfoBuilder = sysInfoBuilder.initDNS(domains);
+        }
+        if (result.getBoolean("cql_logging.enabled", () -> false)) {
+            sysInfoBuilder.initLogCQL(result.getString("cql_logging.contact_point"),
+                    result.getString("cql_logging.namespace", () -> "SysInfoDefault"),
+                    result.getString("cql_logging.username", () -> ""),
+                    result.getString("cql_logging.password", () -> ""));
         }
 
         return sysInfoBuilder.build();

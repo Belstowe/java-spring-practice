@@ -45,6 +45,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.3'
     implementation 'org.slf4j:slf4j-nop:1.7.36'
     implementation 'org.tomlj:tomlj:1.0.0'
+    implementation 'com.scylladb:scylla-driver-core:3.11.2.0'
     testImplementation 'junit:junit:4.13.2'
 }
 //end::dependencies[]
