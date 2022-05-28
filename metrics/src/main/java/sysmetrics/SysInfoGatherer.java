@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,25 +67,24 @@ public class SysInfoGatherer {
             if (!cqlTablesInitialized) {
                 for (var entry : metrics.entrySet()) {
                     String createTableStatement = "CREATE TABLE IF NOT EXISTS " + entry.getKey() + " ( ";
-                    createTableStatement += "time_got timestamp PRIMARY KEY";
+                    createTableStatement += "infodate date, infotime time, ";
                     for (var subEntry : entry.getValue().keySet()) {
-                        createTableStatement += ", ";
-                        createTableStatement += subEntry + " double";
+                        createTableStatement += subEntry + " double, ";
                     }
-                    createTableStatement += " );";
+                    createTableStatement += "PRIMARY KEY ((infodate), infotime) );";
                     executeStatement(createTableStatement);
                 }
                 cqlTablesInitialized = true;
             }
-            var timestamp = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now());
-            timestamp = timestamp.substring(0, timestamp.length() - 8);
+            var infoDate = "'" + DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDate.now()) + "'";
+            var infoTime = "'" + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "'";
             for (var entry : metrics.entrySet()) {
-                String insertStatement = "INSERT INTO " + entry.getKey() + " (time_got";
+                String insertStatement = "INSERT INTO " + entry.getKey() + " (infodate, infotime";
                 for (var subKey : entry.getValue().keySet()) {
                     insertStatement += ", ";
                     insertStatement += subKey;
                 }
-                insertStatement += ") VALUES ('" + timestamp + "'";
+                insertStatement += ") VALUES (" + infoDate + ", " + infoTime;
                 for (var subValue : entry.getValue().values()) {
                     insertStatement += ", ";
                     insertStatement += Double.toString(subValue);
