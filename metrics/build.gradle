@@ -6,7 +6,9 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'application'
 
-mainClassName = 'sysmetrics.ConsoleLog'
+mainClassName = 'com.sysmetrics.main.ConsoleLog'
+
+group = 'com.sysmetrics'
 
 sourceSets {
     main.resources.srcDirs = ['src/main/resources']
@@ -25,7 +27,7 @@ jar {
 
     manifest {
         attributes(
-            'Main-Class': 'sysmetrics.ConsoleLog',
+            'Main-Class': 'com.sysmetrics.main.sysmetrics.ConsoleLog',
             'Implementation-Title': project.name,
             'Implementation-Version': project.version,
         )
@@ -65,7 +67,7 @@ tasks.register('uberJar', Jar) {
 
     manifest {
         attributes(
-            'Main-Class': 'sysmetrics.ConsoleLog',
+            'Main-Class': 'com.sysmetrics.main.sysmetrics.ConsoleLog',
             'Implementation-Title': project.name,
             'Implementation-Version': project.version,
         )

@@ -1,4 +1,4 @@
-package sysmetrics;
+package com.sysmetrics.main;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

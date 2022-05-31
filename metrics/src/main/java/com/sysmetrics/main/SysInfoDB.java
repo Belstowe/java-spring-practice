@@ -1,4 +1,4 @@
-package sysmetrics;
+package com.sysmetrics.main;
 
 import java.util.Collection;
 import java.util.Map;

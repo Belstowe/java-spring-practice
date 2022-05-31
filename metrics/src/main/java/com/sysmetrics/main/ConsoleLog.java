@@ -1,4 +1,4 @@
-package sysmetrics;
+package com.sysmetrics.main;
 
 import java.io.IOException;
 import java.nio.file.Path;
