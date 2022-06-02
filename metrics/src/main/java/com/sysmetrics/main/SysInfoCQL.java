@@ -112,7 +112,8 @@ public class SysInfoCQL
 
         var result = new TreeMap<String, Map<String, Double>>();
         for (Row row : rs) {
-            var metaTime = dateString + "T" + LocalTime.ofNanoOfDay(row.getTime("infotime")).toString();
+            var metaTime = dateString + " "
+                    + LocalTime.ofNanoOfDay(row.getTime("infotime")).format(DateTimeFormatter.ofPattern("HH:mm:ss"));
             var metrics = new HashMap<String, Double>();
             for (int i = 2; i < columns.size(); i++) {
                 metrics.put(columns.getName(i), row.getDouble(i));
@@ -137,8 +138,7 @@ public class SysInfoCQL
                 var thisDateMetrics = requestTimeRange(date, fromTime, toTime, group);
                 if (pastMetrics != null) {
                     thisDateMetrics.forEach(
-                        (key, value) -> pastMetrics.merge(key, value, (v1, v2) -> v1)
-                    );
+                            (key, value) -> pastMetrics.merge(key, value, (v1, v2) -> v1));
                 } else {
                     result.put(group, requestTimeRange(date, fromTime, toTime, group));
                 }
