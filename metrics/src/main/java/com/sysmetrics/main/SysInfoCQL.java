@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
@@ -109,7 +110,7 @@ public class SysInfoCQL
         var columns = rs.getColumnDefinitions();
         var dateString = date.toString();
 
-        var result = new HashMap<String, Map<String, Double>>();
+        var result = new TreeMap<String, Map<String, Double>>();
         for (Row row : rs) {
             var metaTime = dateString + "T" + LocalTime.ofNanoOfDay(row.getTime("infotime")).toString();
             var metrics = new HashMap<String, Double>();
