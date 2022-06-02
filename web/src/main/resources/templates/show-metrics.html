@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+
+    <title>SysMetrics</title>
+    <style>
+      body {
+          background: repeating-linear-gradient(-45deg, rgb(220, 220, 220, 1), rgb(220, 220, 220, 1) 1%, rgb(200, 200, 200, 1) 1%, rgb(200, 200, 200, 1) 2%) no-repeat;
+          background-repeat: repeat;
+          min-height: 100vh;
+      }
+
+      canvas {
+        width: 70vw;
+        height: 30vh;
+      }
+
+      .inner-body {
+          width: 90%;
+          min-height: 90%;
+          background-color: white;
+
+          position: absolute;
+          top: 5%;
+          left: 5%;
+
+          margin: auto;
+          padding: 1vh 1vw;
+
+          display: flex;
+          align-items: center;
+          align-content: center;
+          justify-content: flex-start;
+          flex-direction: column;
+
+          box-shadow: 0.5vh 0.5vh 1vh 1vh darkgray;
+      }
+
+      .division-grid {
+          display: grid;
+          width: fit-content;
+          grid-template-columns: 1fr;
+          grid-auto-rows: auto;
+          border-top: 2% solid rgba(0, 0, 0, 0.1);
+          border-bottom: 2% solid rgba(0, 0, 0, 0.1);
+      }
+
+      .division-grid > div {
+          position: relative;
+          text-align: center;
+          display: flex;
+          align-items: center;
+          align-content: center;
+          justify-content: center;
+      }
+
+      .group-div {
+        border-top: 0.5vh solid rgba(0, 0, 0, 0.2);
+        border-bottom: 0.5vh solid rgba(0, 0, 0, 0.2);
+      }
+
+      .chart-div {
+        border-right: 0.3vw solid rgba(0, 0, 0, 0.05);
+        padding: 1em;
+      }
+
+      .header-div {
+        border-left: 0.3vw solid rgba(0, 0, 0, 0.1);
+        padding: 1em;
+      }
+    </style>
+  </head>
+  <body>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <div class="inner-body">
+      <div class="division-grid"> 
+        <div class="group-div">
+          <h1><a href="/">Index Page</a></h1>
+        </div>
+        <div class="group-div" th:each="group : ${metrics}">
+          <div class="chart-div">
+            <canvas th:id="'chart-' + ${group.getKey}"></canvas>
+            <script th:inline="javascript">
+            /*<![CDATA[*/
+
+              const new_chart_/*[(${group.getKey})]*/
+                = new Chart(document.getElementById(/*[['chart-' + ${group.getKey}]]*/).getContext('2d'), {
+                  type: 'line',
+                  data: {
+                      labels: [
+                        /*[# th:each="timestamp : ${group.getValue}"]*/
+                        /*[[${timestamp.getKey}]]*/,
+                        /*[/]*/
+                      ],
+                      datasets: [
+                        /*[# th:each="label : ${metricLabels.get(group.getKey)}"]*/
+                        {
+                          label: /*[[${label}]]*/ '',
+                          data: [
+                            /*[# th:each="timestamp : ${group.getValue}"]*/
+                            /*[(${timestamp.getValue.get(label)})]*/,
+                            /*[/]*/
+                          ],
+                          fill: false,
+                          borderColor: [
+                            'rgba(255, 99, 132, 0.4)',
+                            'rgba(99, 255, 226, 0.4)',
+                            'rgba(210, 255, 99, 0.4)',
+                            'rgba(99, 255, 156, 0.4)',
+                            'rgba(99, 99, 255, 0.4)',
+                            'rgba(226, 99, 255, 0.4)',
+                            'rgba(255, 172, 99, 0.4)',
+                            'rgba(223, 225, 99, 0.4)'
+                          ],
+                          tension: 0.1
+                        },
+                        /*[/]*/
+                    ]
+                  },
+                  options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                      y: {
+                        beginAtZero: true
+                      }
+                    }
+                  }
+              });
+  
+            /*]]>*/
+            </script>
+          </div><br>
+          <div class="header-div">
+            <h1 th:text="${group.getKey}"></h1>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.min.js" integrity="sha384-VHvPCCyXqtD5DqJeNxl2dtTyhF78xXNXdkwX1CZeRusQfRKp+tA7hAShOK/B/fQ2" crossorigin="anonymous"></script>
+
+  </body>
+</html>

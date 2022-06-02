@@ -6,7 +6,9 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'application'
 
-mainClassName = 'sysmetrics.ConsoleLog'
+mainClassName = 'com.sysmetrics.main.ConsoleLog'
+
+group = 'com.sysmetrics'
 
 sourceSets {
     main.resources.srcDirs = ['src/main/resources']
@@ -25,7 +27,7 @@ jar {
 
     manifest {
         attributes(
-            'Main-Class': 'sysmetrics.ConsoleLog',
+            'Main-Class': 'com.sysmetrics.main.sysmetrics.ConsoleLog',
             'Implementation-Title': project.name,
             'Implementation-Version': project.version,
         )
@@ -43,7 +45,7 @@ java {
 dependencies {
     implementation 'com.github.oshi:oshi-core-java11:6.1.6'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.3'
-    implementation 'org.slf4j:slf4j-nop:1.7.36'
+    //implementation 'org.slf4j:slf4j-nop:1.7.36'
     implementation 'org.tomlj:tomlj:1.0.0'
     implementation 'com.scylladb:scylla-driver-core:3.11.2.0'
     testImplementation 'junit:junit:4.13.2'
@@ -65,7 +67,7 @@ tasks.register('uberJar', Jar) {
 
     manifest {
         attributes(
-            'Main-Class': 'sysmetrics.ConsoleLog',
+            'Main-Class': 'com.sysmetrics.main.sysmetrics.ConsoleLog',
             'Implementation-Title': project.name,
             'Implementation-Version': project.version,
         )

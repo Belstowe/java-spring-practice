@@ -1,4 +1,4 @@
-package dns;
+package com.sysmetrics.dns;
 
 import java.io.BufferedReader;
 import java.io.IOException;

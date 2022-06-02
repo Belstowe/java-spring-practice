@@ -1,4 +1,4 @@
-package sysmetrics;
+package com.sysmetrics.main;
 
 import java.io.IOException;
 import java.nio.file.FileStore;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import dns.PingUtility;
+import com.sysmetrics.dns.PingUtility;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
@@ -41,8 +41,8 @@ public class SysInfoGatherer {
             updater.update();
         }
         if (db != null) {
-            for (var metric_group : metrics.entrySet()) {
-                db.insert(metric_group.getKey(), metric_group.getValue());
+            for (var metricGroup : metrics.entrySet()) {
+                db.insert(metricGroup.getKey(), metricGroup.getValue());
             }
         }
         return metrics;
