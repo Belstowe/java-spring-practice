@@ -99,11 +99,11 @@ public class SysInfoCQL
     private Map<String, Map<String, Double>> requestTimeRange(
             LocalDate date, LocalTime from, LocalTime to, String table) {
         String selectStatement = "SELECT * FROM " + table + " WHERE infodate = '" + date + "'";
-        if (from == null) {
-            selectStatement += " AND infotime >= '" + from + "'";
+        if (from != null) {
+            selectStatement += " AND infotime >= '" + from.format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "'";
         }
-        if (to == null) {
-            selectStatement += " AND infotime <= '" + to + "'";
+        if (to != null) {
+            selectStatement += " AND infotime <= '" + to.format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "'";
         }
         selectStatement += ";";
         ResultSet rs = session.execute(selectStatement);
@@ -133,7 +133,15 @@ public class SysInfoCQL
             var fromTime = (date.isEqual(fromDate) ? from.toLocalTime() : null);
             var toTime = (date.isEqual(toDate) ? to.toLocalTime() : null);
             for (var group : groups) {
-                result.put(group, requestTimeRange(date, fromTime, toTime, group));
+                var pastMetrics = result.get(group);
+                var thisDateMetrics = requestTimeRange(date, fromTime, toTime, group);
+                if (pastMetrics != null) {
+                    thisDateMetrics.forEach(
+                        (key, value) -> pastMetrics.merge(key, value, (v1, v2) -> v1)
+                    );
+                } else {
+                    result.put(group, requestTimeRange(date, fromTime, toTime, group));
+                }
             }
         }
 
