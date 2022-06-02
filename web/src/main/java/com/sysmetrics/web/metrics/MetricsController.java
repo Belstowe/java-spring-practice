@@ -1,6 +1,10 @@
 package com.sysmetrics.web.metrics;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 
 import javax.annotation.PostConstruct;
 
@@ -37,8 +41,30 @@ public class MetricsController {
     public String metrics(
             @RequestParam(value = "from", required = true) @DateTimeFormat(pattern = "yyyyMMdd-HHmmss") LocalDateTime from,
             @RequestParam(value = "to", required = true) @DateTimeFormat(pattern = "yyyyMMdd-HHmmss") LocalDateTime to,
+            @RequestParam(value = "groups", required = false) List<String> groups,
             Model model) {
-        return "data";
+        var existingGroups = Arrays.asList(db.getGroups());
+        if ((groups == null) || groups.isEmpty()) {
+            groups = existingGroups;
+        } else {
+            if (groups.stream().anyMatch((group) -> {
+                return !existingGroups.contains(group);
+            })) {
+                return "index";
+            }
+        }
+
+        var metrics = db.selectTimeRange(from, to, groups);
+        var metricLabels = new HashMap<String, Collection<String>>();
+        for (var groupEntry : metrics.entrySet()) {
+            var group = groupEntry.getKey();
+            for (var timestampEntry : groupEntry.getValue().values()) {
+                metricLabels.put(group, timestampEntry.keySet());
+            }
+        }
+        model.addAttribute("metrics", metrics);
+        model.addAttribute("metricLabels", metricLabels);
+        return "show-metrics";
     }
 
 }
