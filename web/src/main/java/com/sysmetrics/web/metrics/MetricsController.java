@@ -16,6 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
@@ -37,10 +38,16 @@ public class MetricsController {
         db = new SysInfoCQL(dbContact, dbNamespace, dbUsername, dbPassword);
     }
 
+    @RequestMapping("/")
+    public String indexPage(Model model) {
+        model.addAttribute("groups", db.getGroups());
+        return "index";
+    }
+
     @GetMapping("/data")
     public String metricsCharts(
-            @RequestParam(value = "from", required = true) @DateTimeFormat(pattern = "yyyyMMdd-HHmmss") LocalDateTime from,
-            @RequestParam(value = "to", required = true) @DateTimeFormat(pattern = "yyyyMMdd-HHmmss") LocalDateTime to,
+            @RequestParam(value = "from", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(value = "to", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @RequestParam(value = "groups", required = false) List<String> groups,
             Model model) {
         var existingGroups = Arrays.asList(db.getGroups());

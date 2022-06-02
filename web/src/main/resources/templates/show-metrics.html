@@ -82,7 +82,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <div class="inner-body">
-      <div class="division-grid">
+      <div class="division-grid"> 
+        <div class="group-div">
+          <h1><a href="/">Index Page</a></h1>
+        </div>
         <div class="group-div" th:each="group : ${metrics}">
           <div class="chart-div">
             <canvas th:id="'chart-' + ${group.getKey}"></canvas>
