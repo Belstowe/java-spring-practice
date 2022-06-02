@@ -18,7 +18,9 @@ public class SysInfoCQL
     private Collection<DBException> exceptions = new ArrayList<DBException>();
 
     public SysInfoCQL(String contactPoint, String namespace, String username, String password) {
-        var clusterBuilder = Cluster.builder().addContactPoint(contactPoint);
+        var clusterBuilder = Cluster.builder()
+                .withoutJMXReporting()
+                .addContactPoint(contactPoint);
         if (username != "") {
             clusterBuilder = clusterBuilder.withCredentials(username, password);
         }
