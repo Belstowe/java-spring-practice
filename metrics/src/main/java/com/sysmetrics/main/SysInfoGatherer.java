@@ -41,8 +41,8 @@ public class SysInfoGatherer {
             updater.update();
         }
         if (db != null) {
-            for (var metric_group : metrics.entrySet()) {
-                db.insert(metric_group.getKey(), metric_group.getValue());
+            for (var metricGroup : metrics.entrySet()) {
+                db.insert(metricGroup.getKey(), metricGroup.getValue());
             }
         }
         return metrics;

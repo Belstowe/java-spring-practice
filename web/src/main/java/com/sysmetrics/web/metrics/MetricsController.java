@@ -38,7 +38,7 @@ public class MetricsController {
     }
 
     @GetMapping("/data")
-    public String metrics(
+    public String metricsCharts(
             @RequestParam(value = "from", required = true) @DateTimeFormat(pattern = "yyyyMMdd-HHmmss") LocalDateTime from,
             @RequestParam(value = "to", required = true) @DateTimeFormat(pattern = "yyyyMMdd-HHmmss") LocalDateTime to,
             @RequestParam(value = "groups", required = false) List<String> groups,
