@@ -65,14 +65,14 @@ public class SysInfoGatherer {
             SysInfoGatherer.this.metrics.put("network_usage", new HashMap<String, Double>());
             dbColumns.put("network_usage", new ArrayList<String>());
             for (NetworkIF networkInterface : SysInfoGatherer.this.networkInterfaces) {
-                String interfaceName = networkInterface.getName();
+                String interfaceName = networkInterface.getName().replace('-', '_');
                 dbColumns.get("network_usage").add(interfaceName + "_recv");
                 dbColumns.get("network_usage").add(interfaceName + "_sent");
             }
 
             SysInfoGatherer.this.updaters.add(() -> {
                 for (NetworkIF networkInterface : networkInterfaces) {
-                    String interfaceName = networkInterface.getName();
+                    String interfaceName = networkInterface.getName().replace('-', '_');;
                     long oldRecv = networkInterface.getBytesRecv();
                     long oldSent = networkInterface.getBytesSent();
                     networkInterface.updateAttributes();
